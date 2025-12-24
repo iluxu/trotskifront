@@ -26,7 +26,7 @@
   body.append('line_items[0][quantity]', '1');
   body.set('success_url', `${origin}/success?session_id={CHECKOUT_SESSION_ID}`);
   body.set('cancel_url', `${origin}/?canceled=1`);
-  body.set('customer_creation', 'always');
+  body.set('customer_email', 'required');
   body.append('payment_method_types[]', 'card');
 
   const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
