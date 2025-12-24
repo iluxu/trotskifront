@@ -319,12 +319,12 @@
 
       try {
         const res = await fetch('/api/checkout', { method: 'POST' });
-        if (!res.ok) throw new Error('Checkout failed');
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || 'Checkout failed');
         if (!data.url) throw new Error('Missing checkout url');
         window.location.href = data.url;
       } catch (err) {
-        alert('Checkout error. Please try again.');
+        alert(`Checkout error: ${err.message}`);
         buttonIds.forEach((id) => {
           const btn = document.getElementById(id);
           if (btn) { btn.disabled = false; btn.textContent = id === 'buyButton2' ? 'Subscribe' : 'Start subscription'; }
