@@ -11,7 +11,7 @@
   }
 
   const stripeKey = env.STRIPE_SECRET_KEY;
-  const priceId = env.STRIPE_PRICE_ID || 'price_1ShpGNEEnbmnBN8hrflIMoh0';
+  const priceId = (env.STRIPE_PRICE_ID || 'price_1ShpGNEEnbmnBN8hrflIMoh0').trim();
 
   if (!stripeKey) {
     return json({ error: 'Missing STRIPE_SECRET_KEY' }, 500);
