@@ -42,6 +42,54 @@
             font-size: 0.8rem;
         }
 
+        .license-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        .license-status {
+            font-size: 0.85rem;
+            color: #ffd93d;
+            margin-right: 0.5rem;
+        }
+
+        .license-input {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e6e6e6;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            min-width: 240px;
+        }
+
+        .license-btn {
+            background: #00d4ff;
+            color: #0f0f23;
+            border: none;
+            padding: 0.45rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .license-btn.secondary {
+            background: transparent;
+            color: #e6e6e6;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .license-link {
+            color: #6bcf7f;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
         .status-item {
             display: flex;
             align-items: center;
@@ -398,6 +446,15 @@
         </div>
     </div>
 
+    <div class="license-bar">
+        <div class="license-status" id="license-state">Trial not started</div>
+        <div class="license-status" id="trial-timer">30:00</div>
+        <input id="license-key" class="license-input" type="text" placeholder="License key (XXXX-XXXX-XXXX-XXXX-XXXX)" />
+        <button id="license-activate" class="license-btn">Activate</button>
+        <button id="trial-start" class="license-btn secondary">Start 30-min trial</button>
+        <a class="license-link" href="/" target="_blank">Pricing</a>
+    </div>
+
     <div class="main-container">
         <!-- Transcript Panel -->
         <div class="panel">
@@ -474,6 +531,96 @@
             const params = new URLSearchParams(window.location.search);
             return params.get('ws') || DEFAULT_WS_URL;
         }
+
+        const TRIAL_MINUTES = 30;
+        const TRIAL_STORAGE_KEY = 'trotski_trial_start';
+        const LICENSE_STORAGE_KEY = 'trotski_license_key';
+        let licenseActive = false;
+
+        function getStoredLicenseKey() {
+            return (localStorage.getItem(LICENSE_STORAGE_KEY) || '').trim();
+        }
+
+        function setStoredLicenseKey(key) {
+            const clean = (key || '').trim().toUpperCase();
+            if (clean) {
+                localStorage.setItem(LICENSE_STORAGE_KEY, clean);
+            }
+            return clean;
+        }
+
+        function formatRemaining(seconds) {
+            const mins = Math.max(0, Math.floor(seconds / 60));
+            const secs = Math.max(0, seconds % 60);
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function getLocalTrialRemaining() {
+            const startMs = parseInt(localStorage.getItem(TRIAL_STORAGE_KEY) || '0', 10);
+            if (!startMs) return null;
+            const totalSec = TRIAL_MINUTES * 60;
+            const elapsed = Math.floor((Date.now() - startMs) / 1000);
+            return Math.max(0, totalSec - elapsed);
+        }
+
+        function setTrialStartFromRemaining(remainingSec) {
+            const totalSec = TRIAL_MINUTES * 60;
+            const startMs = Date.now() - Math.max(0, totalSec - remainingSec) * 1000;
+            localStorage.setItem(TRIAL_STORAGE_KEY, String(startMs));
+        }
+
+        function updateTrialUi(remainingSec) {
+            const timerEl = document.getElementById('trial-timer');
+            const statusEl = document.getElementById('license-state');
+            const trialBtn = document.getElementById('trial-start');
+
+            if (licenseActive) {
+                statusEl.textContent = 'License active';
+                timerEl.textContent = '';
+                return;
+            }
+
+            if (remainingSec == null) {
+                statusEl.textContent = 'Trial not started';
+                timerEl.textContent = `${TRIAL_MINUTES}:00`;
+                if (trialBtn) trialBtn.disabled = false;
+                return;
+            }
+
+            if (remainingSec <= 0) {
+                statusEl.textContent = 'Trial expired';
+                timerEl.textContent = '00:00';
+                if (trialBtn) trialBtn.disabled = true;
+                return;
+            }
+
+            statusEl.textContent = 'Trial active';
+            timerEl.textContent = formatRemaining(remainingSec);
+            if (trialBtn) trialBtn.disabled = true;
+        }
+
+        function startLocalTrial() {
+            if (getLocalTrialRemaining() != null) return;
+            localStorage.setItem(TRIAL_STORAGE_KEY, String(Date.now()));
+            updateTrialUi(getLocalTrialRemaining());
+        }
+
+        function updateLicenseState(valid) {
+            licenseActive = Boolean(valid);
+            updateTrialUi(getLocalTrialRemaining());
+        }
+
+        function trialExpired() {
+            if (licenseActive) return false;
+            const remaining = getLocalTrialRemaining();
+            return remaining !== null && remaining <= 0;
+        }
+
+        function canUseTrial() {
+            if (licenseActive) return true;
+            const remaining = getLocalTrialRemaining();
+            return remaining !== null && remaining > 0;
+        }
 class STTInterviewPanel {
   constructor() {
     this.ws = null;
@@ -531,6 +678,10 @@ class STTInterviewPanel {
                     this.ws.onopen = () => {
                         console.log('WebSocket connected');
                         this.state.connected = true;
+                        const key = getStoredLicenseKey();
+                        if (key) {
+                            this.ws.send(JSON.stringify({ cmd: 'license', key }));
+                        }
                         this.updateConnectionStatus();
                         if (this.reconnectTimeout) {
                             clearTimeout(this.reconnectTimeout);
@@ -588,7 +739,25 @@ handleLine(line) {
 
 
             handleMessage(data) {
-                if (data.snapshot) {
+                if (data.trial) {
+                    const remaining = Number(data.trial.remaining_sec || 0);
+                    if (remaining > 0) {
+                        setTrialStartFromRemaining(remaining);
+                    }
+                    updateTrialUi(getLocalTrialRemaining());
+                } else if (data.license) {
+                    const statusEl = document.getElementById('license-state');
+                    if (data.license === 'valid') {
+                        updateLicenseState(true);
+                    } else {
+                        if (statusEl) statusEl.textContent = 'License invalid';
+                        updateLicenseState(false);
+                    }
+                } else if (data.error) {
+                    const statusEl = document.getElementById('license-state');
+                    if (statusEl && data.message) statusEl.textContent = data.message;
+                    updateTrialUi(getLocalTrialRemaining());
+                } else if (data.snapshot) {
                     this.handleSnapshot(data.snapshot);
                 } else if (data.partial) {
                     this.handlePartial(data.partial);
@@ -1181,6 +1350,36 @@ submitQuestion() {
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
             panel = new STTInterviewPanel();
+
+            const licenseInput = document.getElementById('license-key');
+            const licenseBtn = document.getElementById('license-activate');
+            const trialBtn = document.getElementById('trial-start');
+
+            if (licenseInput) {
+                licenseInput.value = getStoredLicenseKey();
+            }
+
+            if (licenseBtn) {
+                licenseBtn.addEventListener('click', () => {
+                    const key = setStoredLicenseKey(licenseInput?.value || '');
+                    if (!key) return;
+                    if (panel?.ws && panel.ws.readyState === WebSocket.OPEN) {
+                        panel.ws.send(JSON.stringify({ cmd: 'license', key }));
+                    }
+                    if (audioWs && audioWs.readyState === WebSocket.OPEN) {
+                        audioWs.send(JSON.stringify({ cmd: 'license', key }));
+                    }
+                });
+            }
+
+            if (trialBtn) {
+                trialBtn.addEventListener('click', () => {
+                    startLocalTrial();
+                });
+            }
+
+            updateTrialUi(getLocalTrialRemaining());
+            setInterval(() => updateTrialUi(getLocalTrialRemaining()), 1000);
             
             // Handle Enter key in ask modal
             document.getElementById('question-input').addEventListener('keydown', (e) => {
@@ -1218,6 +1417,14 @@ async function tryGetDisplay(constraints, label) {
 }
 
 async function startShare() {
+  if (!licenseActive && !canUseTrial()) {
+    alert('Start the 30-minute trial or enter a license key to continue.');
+    return;
+  }
+  if (trialExpired()) {
+    alert('Trial expired. Please enter a license key to continue.');
+    return;
+  }
   if (!('mediaDevices' in navigator) || !('getDisplayMedia' in navigator.mediaDevices)) {
     log('❌ getDisplayMedia non disponible dans ce navigateur.');
     return;
@@ -1291,6 +1498,10 @@ async function startShare() {
   audioWs = new WebSocket(wsUrl);
   audioWs.binaryType = 'arraybuffer';
   audioWs.onopen = () => {
+    const key = getStoredLicenseKey();
+    if (key) {
+      audioWs.send(JSON.stringify({ cmd: 'license', key }));
+    }
     // informe le serveur que c’est un “ingest” (il coupe les broadcasts)
     audioWs.send(JSON.stringify({ cmd: 'hello', client: 'ingest' }));
     log('🔗 WS audio connecté');
