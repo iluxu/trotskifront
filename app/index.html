@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STT Interview Panel</title>
+    <title>Trotski Live Interview Panel</title>
     <style>
         * {
             margin: 0;
@@ -17,6 +17,8 @@
             color: #e6e6e6;
             height: 100vh;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
@@ -40,6 +42,54 @@
             display: flex;
             gap: 1rem;
             font-size: 0.8rem;
+        }
+
+        .quickstart {
+            font-size: 0.85rem;
+            color: #9aa3b2;
+            padding: 0.6rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.18);
+        }
+
+        .capture-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .capture-btn {
+            background: #00d4ff;
+            color: #0f0f23;
+            border: none;
+            padding: 0.45rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .capture-btn.secondary {
+            background: transparent;
+            color: #e6e6e6;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .capture-log {
+            flex: 1 1 240px;
+            min-width: 220px;
+            max-height: 90px;
+            overflow: auto;
+            font-size: 0.8rem;
+            color: #9aa3b2;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.45rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .license-bar {
@@ -116,7 +166,8 @@
         .main-container {
             display: grid;
             grid-template-columns: 2fr 3fr 2fr;
-            height: calc(100vh - 60px);
+            flex: 1;
+            min-height: 0;
             gap: 1px;
             background: rgba(255, 255, 255, 0.05);
         }
@@ -421,7 +472,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>🎤 STT Interview Panel</h1>
+        <h1>Trotski Live Interview Panel</h1>
         <div class="status-indicators">
             <div class="status-item">
                 <div id="ws-status" class="status-dot status-disconnected"></div>
@@ -438,11 +489,6 @@
             <div class="status-item">
                 <span id="qa-count">QAs: 0 (pending: 0)</span>
             </div>
-			    <button id="start">Partager l’onglet (avec audio)</button>
-    <button id="stop" disabled>Stop</button>
-	
-    <pre id="log"></pre>
-
         </div>
     </div>
 
@@ -455,11 +501,19 @@
         <a class="license-link" href="/" target="_blank">Pricing</a>
     </div>
 
+    <div class="quickstart">Quick start: 1) Start 30-min trial or enter a license 2) Click Share tab with audio 3) Speak and watch the transcript.</div>
+
+    <div class="capture-controls">
+        <button id="start" class="capture-btn">Share tab with audio</button>
+        <button id="stop" class="capture-btn secondary" disabled>Stop capture</button>
+        <pre id="log" class="capture-log">Waiting for audio stream...</pre>
+    </div>
+
     <div class="main-container">
         <!-- Transcript Panel -->
         <div class="panel">
             <div class="panel-header">
-                <span>📝 Transcript</span>
+                <span>Transcript</span>
                 <span id="transcript-info">Waiting for audio...</span>
             </div>
             <div class="panel-content">
@@ -475,7 +529,7 @@
         <!-- Answer Detail Panel -->
         <div class="panel">
             <div class="panel-header">
-                <span>💡 Answer Details</span>
+                <span>Answer Details</span>
                 <span id="detail-info">Select a question to view details</span>
             </div>
             <div class="panel-content">
@@ -490,7 +544,7 @@
         <!-- Questions & Answers Panel -->
         <div class="panel">
             <div class="panel-header">
-                <span>❓ Questions & Answers</span>
+                <span>Questions & Answers</span>
                 <span id="qa-info">Ready</span>
             </div>
             <div class="panel-content">
@@ -505,11 +559,11 @@
 
     <!-- Controls -->
     <div class="controls">
-        <button class="control-btn" onclick="toggleAutoScroll()" title="Toggle auto-scroll (p)">📜 Auto</button>
-        <button class="control-btn active" onclick="toggleFollow()" title="Follow latest question (f)">👁️ Follow</button>
-        <button class="control-btn" onclick="askQuestion()" title="Ask a question (a)">❓ Ask</button>
-        <button class="control-btn" onclick="resetView()" title="Reset view (r)">🔄 Reset</button>
-        <button class="control-btn" onclick="saveSnapshot()" title="Save snapshot (s)">💾 Save</button>
+        <button class="control-btn" onclick="toggleAutoScroll()" title="Toggle auto-scroll (p)">Auto</button>
+        <button class="control-btn active" onclick="toggleFollow()" title="Follow latest question (f)">Follow</button>
+        <button class="control-btn" onclick="askQuestion()" title="Ask a question (a)">Ask</button>
+        <button class="control-btn" onclick="resetView()" title="Reset view (r)">Reset</button>
+        <button class="control-btn" onclick="saveSnapshot()" title="Save snapshot (s)">Save</button>
     </div>
 
     <!-- Ask Modal -->
@@ -633,8 +687,8 @@ class STTInterviewPanel {
       followLatest: true,
       selectedIndex: -1
     };
-    this.qaById = new Map(); // 👈 index rapide par qid
-    this.seenIds = new Set(); // 👈 éviter doublons par id
+    this.qaById = new Map(); // quick index by qid
+    this.seenIds = new Set(); // avoid duplicates by id
     this.seenQuestions = new Set(); // legacy (texte)
     this.reconnectTimeout = null;
     this.init();
@@ -733,7 +787,7 @@ handleLine(line) {
   if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
 
   this.state.transcript = (this.state.transcript ? this.state.transcript + ' ' : '') + text;
-  this.renderTranscriptLine(text);  // réutilise ton renderer existant
+  this.renderTranscriptLine(text);  // reuse existing renderer
   this.updateUI();
 }
 
@@ -766,13 +820,13 @@ handleLine(line) {
                 } else if (data.qa) {
                     this.handleQA(data.qa);
                 }
-				 else if (data.line) { // 👈 AJOUT
+				 else if (data.line) { // additional line handling
     this.handleLine(data.line);
   }
             }
 
 		handleSnapshot(snapshot) {
-		  // 👇 utilise les lignes commitées si présentes
+		  // use committed lines when available
 		  const lines = Array.isArray(snapshot.lines) ? snapshot.lines : [];
 		  const committed = lines.join(' ');
 		  const partial   = snapshot.transcript || '';
@@ -803,7 +857,7 @@ handleLine(line) {
     const q   = payload.q;
     if (!q) return;
 
-    // 👇 anti-doublon par id en priorité
+    // de-duplicate by id first
     if (qid && this.seenIds.has(qid)) return;
     if (!qid && this.seenQuestions.has(q)) return;
 
@@ -842,7 +896,7 @@ handleLine(line) {
       // fallback par texte si pas d'id
       qaItem = this.state.qas.find(it => it.q === q);
       if (!qaItem) {
-        // créer si vraiment jamais vu (rare)
+        // create if never seen (rare)
         qaItem = {
           id: id || ('q-' + Math.random().toString(36).slice(2)),
           q, a: null, t: payload.t || Date.now(), pending: true
@@ -856,7 +910,7 @@ handleLine(line) {
     qaItem.pending = false;
     this.state.pending.delete(qaItem.id);
 
-    // Re-render ligne & détail si sélectionnée
+    // re-render line and detail if selected
     this.renderQuestion(qaItem);
     if (this.state.selectedIndex >= 0 &&
         this.state.qas[this.state.selectedIndex] === qaItem) {
@@ -956,7 +1010,7 @@ handleLine(line) {
                 }
                 
                 const status = qa.pending ? 'pending' : 'answered';
-                const statusText = qa.pending ? '⏳ pending' : '✅ answered';
+                const statusText = qa.pending ? 'pending' : 'answered';
                 const preview = qa.a ? this.truncateText(qa.a, 50) : '(pending...)';
                 
                 row.innerHTML = `
@@ -1147,11 +1201,11 @@ handleLine(line) {
                 markdown += `**Generated:** ${data.timestamp}\n\n`;
                 
                 if (data.transcript) {
-                    markdown += `## 📝 Transcript\n\n${data.transcript}\n\n`;
+                    markdown += `## Transcript\n\n${data.transcript}\n\n`;
                 }
                 
                 if (data.qas.length > 0) {
-                    markdown += `## ❓ Questions & Answers\n\n`;
+                    markdown += `## Questions & Answers\n\n`;
                     data.qas.forEach((qa, index) => {
                         markdown += `### ${index + 1}. ${qa.q}\n\n`;
                         markdown += `${qa.a || '*Answer pending...*'}\n\n`;
@@ -1196,7 +1250,7 @@ submitQuestion() {
   if (this.ws && this.ws.readyState === WebSocket.OPEN) {
     this.ws.send(JSON.stringify({ cmd: 'ask', qid, q: question }));
   } else {
-    // Fallback: on prévient qu'il n'y a pas de WS
+    // Fallback: warn when WS is unavailable
     qaItem.a = '[offline] WebSocket not connected.';
     qaItem.pending = false;
     this.state.pending.delete(qid);
@@ -1404,7 +1458,7 @@ let audioCtx;
 let sourceNode;
 let node;
 let audioWs;
-let pullGain; // pour “tirer” le graphe sans son
+let pullGain; // keep graph alive without audio output
 
 function secureContextOk() {
   if (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1') return true;
@@ -1412,7 +1466,7 @@ function secureContextOk() {
 }
 
 async function tryGetDisplay(constraints, label) {
-  log(`→ try getDisplayMedia: ${label}  ${JSON.stringify(constraints)}`);
+  log(`try getDisplayMedia: ${label}  ${JSON.stringify(constraints)}`);
   return await navigator.mediaDevices.getDisplayMedia(constraints);
 }
 
@@ -1426,11 +1480,11 @@ async function startShare() {
     return;
   }
   if (!('mediaDevices' in navigator) || !('getDisplayMedia' in navigator.mediaDevices)) {
-    log('❌ getDisplayMedia non disponible dans ce navigateur.');
+    log('getDisplayMedia is not available in this browser.');
     return;
   }
   if (!secureContextOk()) {
-    log('❌ Contexte non sécurisé (utilise http://localhost ou https://).');
+    log('Insecure context. Use https:// or http://localhost.');
     return;
   }
 
@@ -1438,14 +1492,14 @@ async function startShare() {
   const stopBtn  = document.getElementById('stop');
 
   try {
-    // 1) Minimal (le plus compatible) — on laisse l’utilisateur cocher “partager le son de l’onglet”
+    // 1) Minimal (most compatible). User checks Share tab audio.
     try {
       stream = await tryGetDisplay({ video: true, audio: true }, 'minimal audio:true');
     } catch (e1) {
       log(`fail minimal: ${e1.name} ${e1.message}`);
 
-      // 2) Tentative “même onglet” (Chromium récents uniquement)
-      // Peut jeter NotSupportedError si la combo n’est pas dispo sur l’OS/version
+      // 2) Try same-tab audio (newer Chromium)
+      // Can throw NotSupportedError depending on OS/version
       try {
         stream = await tryGetDisplay({
           video: true,
@@ -1454,22 +1508,22 @@ async function startShare() {
       } catch (e2) {
         log(`fail selfBrowserSurface: ${e2.name} ${e2.message}`);
 
-        // 3) Windows: “Écran entier” + audio système (selon version Chromium)
+        // 3) Windows: full screen + system audio (Chromium-dependent)
         try {
           stream = await tryGetDisplay({ video: true, audio: { systemAudio: "include" } }, 'systemAudio');
         } catch (e3) {
           log(`fail systemAudio: ${e3.name} ${e3.message}`);
 
-          // 4) Ultime fallback: micro
-          log('Fallback microphone… (onglet non supporté pour l’audio ici)');
+          // 4) Final fallback: microphone
+          log('Fallback to microphone (tab audio not supported here).');
           stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         }
       }
     }
 
-    // Vérifier qu’on a bien de l’audio
+    // Ensure we have audio
     if (stream.getAudioTracks().length === 0) {
-      log('⚠️ Pas de piste audio dans le stream. Dans le picker, sélectionne “Onglet Chrome” ET coche “Partager le son de l’onglet”.');
+      log('No audio track detected. In the picker, select Chrome Tab and enable Share tab audio.');
     }
 
   audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 48000 });
@@ -1477,10 +1531,10 @@ async function startShare() {
 
   sourceNode = audioCtx.createMediaStreamSource(stream);
 
-  // crée le Worklet et configure
+  // Create the worklet
   node = new AudioWorkletNode(audioCtx, 'pcm16k-writer', {
     numberOfInputs: 1,
-    numberOfOutputs: 1, // on sort du silence mais on garde 1 output pour que le graphe soit “pullé”
+    numberOfOutputs: 1, // keep the graph running
     channelCount: 1,
     processorOptions: { targetSampleRate: 16000, chunkMs: 100 }
   });
@@ -1502,14 +1556,14 @@ async function startShare() {
     if (key) {
       audioWs.send(JSON.stringify({ cmd: 'license', key }));
     }
-    // informe le serveur que c’est un “ingest” (il coupe les broadcasts)
+    // Tell server this is an ingest client (no broadcasts)
     audioWs.send(JSON.stringify({ cmd: 'hello', client: 'ingest' }));
-    log('🔗 WS audio connecté');
+    log('Audio WebSocket connected');
   };
   audioWs.onerror = (e) => log('WS audio error: ' + e.message);
-  audioWs.onclose = () => log('WS audio fermé');
+  audioWs.onclose = () => log('Audio WebSocket closed');
 
-  // Réception des chunks PCM16 du worklet → envoi WS
+  // PCM16 chunks from worklet -> send over WS
   node.port.onmessage = (ev) => {
     const { type, payload } = ev.data || {};
     if (type === 'chunk' && payload && audioWs && audioWs.readyState === WebSocket.OPEN) {
@@ -1517,20 +1571,20 @@ async function startShare() {
     }
   };
 
-  // Reprise de l’audioCtx (politique auto-play)
+  // Resume audio context if needed
   if (audioCtx.state === 'suspended') await audioCtx.resume();
 
     startBtn.disabled = true;
     stopBtn.disabled = false;
 
-    // Quand l’utilisateur stoppe via l’UI système
+    // If user stops sharing from browser UI
     (stream.getVideoTracks()[0] || stream.getAudioTracks()[0])?.addEventListener('ended', stopShare);
 
-    log('✅ Capture démarrée. Si tu as choisi “Onglet Chrome”, coche bien “Partager le son de l’onglet”.');
+    log('Capture started. If you chose Chrome Tab, make sure Share tab audio is enabled.');
   } catch (err) {
-    log(`Erreur start: ${err.name}: ${err.message}`);
-    if (err.name === 'NotAllowedError') log('Le navigateur a bloqué l’accès: relance après un clic et autorise le partage.');
-    if (err.name === 'NotSupportedError') log('Combo non supportée ici. Essaie Chrome/Edge à jour, Brave (Shields off), ou “Écran entier” + audio système.');
+    log(`Start error: ${err.name}: ${err.message}`);
+    if (err.name === 'NotAllowedError') log('Browser blocked access. Click again and allow sharing.');
+    if (err.name === 'NotSupportedError') log('Not supported here. Try updated Chrome/Edge, Brave with Shields off, or Full screen + system audio.');
   }
 }
 
@@ -1541,7 +1595,7 @@ function stopShare() {
   stream = null; sourceNode = null; audioCtx = null;
   document.getElementById('start').disabled = false;
   document.getElementById('stop').disabled = true;
-  log('🛑 Capture arrêtée.');
+  log('Capture stopped.');
 }
 
 document.getElementById('start').addEventListener('click', startShare);
@@ -1550,3 +1604,5 @@ document.getElementById('stop').addEventListener('click', stopShare);
 	
 </body>
 </html>
+
+
