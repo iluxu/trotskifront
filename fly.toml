@@ -14,6 +14,6 @@ primary_region = "ord"
 [env]
   STT_HOST = "0.0.0.0"
   STT_PORT = "8123"
-  STT_DEVICE = "cpu"
-  STT_COMPUTE = "int8"
+  STT_BACKEND = "openai"
+  STT_STT_MODEL = "whisper-1"
   STT_TRIAL_MINUTES = "30"

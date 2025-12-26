@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trotski - Real-Time Interview Copilot</title>
+  <title>Trotski - Real-Time Interview + Meeting Copilot</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
     :root {
       --bg: #0b0b12;
       --panel: #12131c;
-      --panel-2: #15182a;
+      --panel-2: #16192a;
       --ink: #f4f4f8;
       --muted: #9aa3b2;
+      --neon: #4ef1ff;
       --acid: #a6ff00;
-      --hot: #ff3d7f;
-      --cold: #35c9ff;
+      --hot: #ff5ec4;
       --line: rgba(255, 255, 255, 0.08);
-      --shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -26,9 +26,9 @@
       font-family: 'Space Grotesk', system-ui, sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(1200px 600px at 80% -10%, rgba(53, 201, 255, 0.15), transparent 60%),
-        radial-gradient(900px 500px at 20% 0%, rgba(255, 61, 127, 0.12), transparent 60%),
-        linear-gradient(180deg, #0b0b12 0%, #0d0f19 55%, #0b0b12 100%);
+        radial-gradient(900px 600px at 10% -10%, rgba(78, 241, 255, 0.18), transparent 60%),
+        radial-gradient(800px 500px at 90% 0%, rgba(255, 94, 196, 0.18), transparent 60%),
+        linear-gradient(180deg, #0a0b12 0%, #0c0f18 60%, #0a0b12 100%);
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -46,7 +46,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 24px 6vw 0;
+      padding: 28px 6vw 0;
     }
 
     .brand {
@@ -54,7 +54,7 @@
       align-items: center;
       gap: 12px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
@@ -78,20 +78,33 @@
 
     .hero {
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 40px;
-      padding: 60px 6vw 40px;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 42px;
+      padding: 70px 6vw 40px;
       align-items: center;
     }
 
-    .hero h1 {
-      font-size: clamp(2.6rem, 4vw, 4.2rem);
-      line-height: 1.05;
+    .pill {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
       margin-bottom: 18px;
     }
 
-    .hero h1 span {
-      background: linear-gradient(120deg, var(--acid), var(--cold));
+    h1 {
+      font-size: clamp(2.7rem, 4.5vw, 4.4rem);
+      line-height: 1.02;
+      margin-bottom: 18px;
+    }
+
+    h1 span {
+      background: linear-gradient(120deg, var(--neon), var(--acid));
       -webkit-background-clip: text;
       color: transparent;
     }
@@ -104,7 +117,7 @@
     }
 
     .cta-row {
-      margin-top: 28px;
+      margin-top: 26px;
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
@@ -121,9 +134,9 @@
     }
 
     .btn-primary {
-      background: linear-gradient(135deg, var(--acid), var(--hot));
+      background: linear-gradient(135deg, var(--neon), var(--hot));
       color: #0b0b12;
-      box-shadow: 0 18px 40px rgba(255, 61, 127, 0.25);
+      box-shadow: 0 18px 40px rgba(78, 241, 255, 0.25);
     }
 
     .btn-primary:hover { transform: translateY(-2px) scale(1.01); }
@@ -134,55 +147,192 @@
       color: var(--ink);
     }
 
-    .pill {
-      font-family: 'JetBrains Mono', monospace;
-      background: rgba(255, 255, 255, 0.06);
-      padding: 8px 12px;
-      border-radius: 999px;
-      color: var(--muted);
-      font-size: 0.85rem;
-      margin-bottom: 18px;
-      display: inline-flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .dashboard {
-      background: radial-gradient(250px 250px at 20% 0%, rgba(166, 255, 0, 0.18), transparent 70%),
-        var(--panel);
+    .hero-card {
+      background: radial-gradient(280px 200px at 15% 0%, rgba(78, 241, 255, 0.18), transparent 65%), var(--panel);
       border: 1px solid var(--line);
       border-radius: 18px;
-      padding: 22px;
+      padding: 24px;
       box-shadow: var(--shadow);
     }
 
-    .dashboard h3 {
-      font-size: 1.2rem;
-      margin-bottom: 10px;
+    .hero-card h3 { font-size: 1.1rem; margin-bottom: 12px; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
     }
 
-    .dash-grid {
+    .stat {
+      padding: 14px;
+      border-radius: 12px;
+      background: var(--panel-2);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat strong { font-size: 1.2rem; }
+
+    .section {
+      padding: 40px 6vw;
+    }
+
+    .section h2 {
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .product-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 18px;
+      border-radius: 14px;
+    }
+
+    .product-card strong { display: block; margin-bottom: 8px; }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 24px;
+    }
+
+    .demo-screen {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .demo-topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--panel-2);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon);
+      box-shadow: 0 0 12px rgba(78, 241, 255, 0.6);
+    }
+
+    .demo-title {
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .tag {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--muted);
+    }
+
+    .demo-body {
+      padding: 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+      display: grid;
+      gap: 10px;
+      min-height: 280px;
+    }
+
+    .demo-line {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+    }
+
+    .demo-time {
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.78rem;
+    }
+
+    .demo-highlight {
+      background: rgba(78, 241, 255, 0.12);
+      border-left: 3px solid var(--neon);
+      padding: 6px 10px;
+      border-radius: 8px;
+      color: var(--ink);
+    }
+
+    .demo-stack {
       display: grid;
       gap: 16px;
     }
 
-    .dash-item {
-      background: var(--panel-2);
-      border-radius: 12px;
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+    .demo-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
     }
 
-    .dash-item span {
-      display: block;
+    .demo-card h4 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .demo-answer {
+      display: grid;
+      gap: 8px;
       color: var(--muted);
-      font-size: 0.85rem;
-      margin-bottom: 6px;
-      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.95rem;
+    }
+
+    .demo-answer strong {
+      color: var(--ink);
+    }
+
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .mini-card {
+      background: var(--panel-2);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .mini-card strong {
+      display: block;
+      color: var(--ink);
+      font-size: 1rem;
+      margin-top: 4px;
     }
 
     .pricing {
-      margin: 40px 6vw 60px;
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 24px;
@@ -196,37 +346,13 @@
       box-shadow: var(--shadow);
     }
 
-    .card h4 { font-size: 1.1rem; margin-bottom: 10px; }
-
     .price {
       font-size: 2rem;
       font-weight: 700;
       margin: 12px 0 18px;
     }
 
-    .card ul {
-      list-style: none;
-      color: var(--muted);
-      display: grid;
-      gap: 10px;
-      font-size: 0.95rem;
-    }
-
-    .feature-row {
-      margin: 0 6vw 80px;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 18px;
-    }
-
-    .feature {
-      padding: 18px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      background: rgba(18, 19, 28, 0.8);
-    }
-
-    .feature strong { display: block; margin-bottom: 8px; }
+    ul { list-style: none; color: var(--muted); display: grid; gap: 10px; }
 
     footer {
       padding: 40px 6vw 60px;
@@ -235,8 +361,9 @@
       border-top: 1px solid var(--line);
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .hero { grid-template-columns: 1fr; }
+      .demo-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -245,7 +372,8 @@
   <header>
     <div class="brand"><span class="brand-badge"></span> Trotski</div>
     <nav>
-      <a href="#features">Features</a>
+      <a href="#product">Product</a>
+      <a href="#demo">Demo</a>
       <a href="#pricing">Pricing</a>
       <a href="/app">Launch</a>
     </nav>
@@ -253,62 +381,107 @@
 
   <section class="hero">
     <div>
-      <div class="pill">Real-time transcript + in-character answers</div>
-      <div class="pill">Live at https://trotski.cc</div>
-      <h1>Interview pressure? <span>Weaponize the room.</span></h1>
-      <p>Trotski is a real-time interview copilot that listens, transcribes, detects questions, and drafts answers instantly. Built for high-pressure interviews, live panels, and rapid-fire Q and A.</p>
+      <div class="pill">Realtime interview + meeting copilot</div>
+      <h1>Turn every question into <span>instant answers</span>.</h1>
+      <p>Trotski listens to a shared tab, transcribes in real time, detects questions in context, and drafts concise answers. Built for interviews, live meetings, and rapid-fire Q and A.</p>
       <div class="cta-row">
         <button class="btn btn-primary" id="buyButton">Start subscription</button>
         <a class="btn btn-secondary" href="/app">Start demo</a>
       </div>
-      <p style="margin-top:16px; font-size:0.9rem; color: var(--muted);">30-minute free trial at https://trotski.cc/app. Cancel anytime. License key delivered after checkout.</p>
+      <p style="margin-top:16px; font-size:0.9rem; color: var(--muted);">30-minute free trial at https://trotski.cc/app. Cancel anytime.</p>
     </div>
-    <div class="dashboard">
-      <h3>Live session pulse</h3>
-      <div class="dash-grid">
-        <div class="dash-item"><span>Transcript latency</span> 0.8s rolling</div>
-        <div class="dash-item"><span>Questions detected</span> 17 in last 12 min</div>
-        <div class="dash-item"><span>Persona</span> Candidate mode</div>
-        <div class="dash-item"><span>Model</span> Faster Whisper + LLM</div>
+    <div class="hero-card">
+      <h3>Live session telemetry</h3>
+      <div class="stat-grid">
+        <div class="stat"><span>Latency</span><strong>0.9s avg</strong></div>
+        <div class="stat"><span>Questions detected</span><strong>18 / 15 min</strong></div>
+        <div class="stat"><span>Context mode</span><strong>Full transcript</strong></div>
+        <div class="stat"><span>Output style</span><strong>Compact</strong></div>
       </div>
     </div>
   </section>
 
-  <section class="feature-row" id="features">
-    <div class="feature"><strong>Real-time STT</strong> Ultra-low latency transcription with continuous context.</div>
-    <div class="feature"><strong>Question sniper</strong> LLM picks the question out of noise and chatter.</div>
-    <div class="feature"><strong>Answer engine</strong> Draft answers in your voice, not a robot voice.</div>
-    <div class="feature"><strong>Session control</strong> Follow mode, auto-scroll, export logs.</div>
+  <section class="section" id="product">
+    <h2>Product, not just a transcript</h2>
+    <div class="product-grid">
+      <div class="product-card"><strong>Context-aware Q detection</strong>Understands the conversation and flags real questions, not noise.</div>
+      <div class="product-card"><strong>Answer drafting</strong>Short, clear, interview-ready responses in your voice.</div>
+      <div class="product-card"><strong>Live control</strong>Follow mode, auto-scroll transcript, export session logs.</div>
+      <div class="product-card"><strong>Privacy-first</strong>Runs on your hardware; you decide what is shared.</div>
+    </div>
   </section>
 
-  <section class="pricing" id="pricing">
-    <div class="card">
-      <h4>Trotski Pro</h4>
-      <div class="price">$29 <span style="font-size:1rem; color:var(--muted)">/ month</span></div>
-      <ul>
-        <li>30-minute free trial</li>
-        <li>Unlimited sessions</li>
-        <li>Full transcript + Q and A</li>
-        <li>Multi-platform client</li>
-        <li>Priority updates</li>
-      </ul>
-      <div class="cta-row" style="margin-top:18px;">
-        <button class="btn btn-primary" id="buyButton2">Subscribe</button>
+  <section class="section" id="demo">
+    <h2>See it working, instantly</h2>
+    <p style="color: var(--muted); margin-bottom: 18px;">Trotski tracks the live conversation and converts questions into clean, compact answers.</p>
+    <div class="demo-grid">
+      <div class="demo-screen">
+        <div class="demo-topbar">
+          <span class="dot"></span>
+          <span class="demo-title">Live transcript</span>
+          <span class="tag">tab audio only</span>
+        </div>
+        <div class="demo-body">
+          <div class="demo-line"><span class="demo-time">00:04</span><span>Let’s walk through the system design.</span></div>
+          <div class="demo-line"><span class="demo-time">00:12</span><span>We need low latency and stable context.</span></div>
+          <div class="demo-line demo-highlight"><span class="demo-time">00:18</span><span>How would you scale this to 1M users?</span></div>
+          <div class="demo-line"><span class="demo-time">00:22</span><span>Focus on caching, queueing, and bounded fanout.</span></div>
+          <div class="demo-line"><span class="demo-time">00:29</span><span>We should optimize cold start and model load.</span></div>
+        </div>
+      </div>
+      <div class="demo-stack">
+        <div class="demo-card">
+          <h4>Question detected</h4>
+          <p style="color: var(--muted);">“How would you scale this to 1M users?”</p>
+        </div>
+        <div class="demo-card">
+          <h4>Draft answer (compact)</h4>
+          <div class="demo-answer">
+            <strong>Answer</strong>
+            <span>Start with a stateless API tier behind a load balancer, add caching for hot reads, and push writes to async queues.</span>
+            <span>Shard by tenant, isolate model workers, and use autoscaling with warm pools to avoid cold starts.</span>
+          </div>
+          <div class="mini-grid">
+            <div class="mini-card">Latency<strong>0.9s</strong></div>
+            <div class="mini-card">Context<strong>Full</strong></div>
+            <div class="mini-card">Mode<strong>Follow</strong></div>
+            <div class="mini-card">Output<strong>Compact</strong></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="card">
-      <h4>What you get</h4>
-      <ul>
-        <li>License key after payment</li>
-        <li>Works with your own hardware</li>
-        <li>Private interviews stay local</li>
-        <li>Cloudflare tunnel ready</li>
-      </ul>
+  </section>
+
+  <section class="section" id="pricing">
+    <h2>Pricing</h2>
+    <div class="pricing">
+      <div class="card">
+        <h4>Trotski Pro</h4>
+        <div class="price">$29 <span style="font-size:1rem; color:var(--muted)">/ month</span></div>
+        <ul>
+          <li>30-minute free trial</li>
+          <li>Unlimited sessions</li>
+          <li>Live answers + export</li>
+          <li>Priority updates</li>
+        </ul>
+        <div class="cta-row" style="margin-top:18px;">
+          <button class="btn btn-primary" id="buyButton2">Subscribe</button>
+        </div>
+      </div>
+      <div class="card">
+        <h4>How it works</h4>
+        <ul>
+          <li>Start the demo</li>
+          <li>Share tab with audio (no mic)</li>
+          <li>Trotski detects questions</li>
+          <li>Copy your license key</li>
+        </ul>
+      </div>
     </div>
   </section>
 
   <footer>
-    Trotski is an interview copilot. You are responsible for compliance with your local policies and interview rules.
+    Trotski is a copilot. You are responsible for compliance with your local policies and interview rules.
   </footer>
 
   <script>

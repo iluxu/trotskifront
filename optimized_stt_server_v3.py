@@ -1,4 +1,4 @@
-import asyncio, json, os, time, re, hashlib, shutil
+import asyncio, json, os, time, re, hashlib, shutil, io, wave
 from typing import Set, Optional, List, Dict, Any
 from collections import deque
 from dataclasses import dataclass, field
@@ -6,7 +6,6 @@ from pathlib import Path  # For multi-OS compatibility
 
 import numpy as np
 import websockets
-from faster_whisper import WhisperModel
 import requests
 import sys
 from pathlib import Path
@@ -52,10 +51,12 @@ WINDOW_SECONDS = float(os.getenv("STT_WINDOW_SECONDS", "6"))
 HOP_SECONDS = float(os.getenv("STT_HOP_SECONDS", "0.8"))
 ENERGY_GATE = float(os.getenv("STT_ENERGY_GATE", "1e-4"))
 
+STT_BACKEND = os.getenv("STT_BACKEND", "faster-whisper").lower()
 MODEL_NAME = os.getenv("STT_MODEL", "small")
 COMPUTE_TYPE = os.getenv("STT_COMPUTE", "int8")
 DEVICE = os.getenv("STT_DEVICE", "cpu").lower()  # cpu | cuda | auto
 FORCE_LANG = os.getenv("STT_LANG") or None
+OPENAI_STT_MODEL = os.getenv("STT_STT_MODEL", "whisper-1")
 # Generic tech prompt for better transcription of jargon
 INITIAL_PROMPT = os.getenv(
     "STT_INITIAL_PROMPT",
@@ -85,6 +86,12 @@ LLM_MIN_GAP_SEC = float(os.getenv("STT_LLM_MIN_GAP_SEC", "1.0"))
 ANSWERS_PER_MIN = int(os.getenv("STT_LLM_ANSWERS_PER_MIN", "8"))
 SEEN_TTL_SEC = float(os.getenv("STT_SEEN_TTL_SEC", "60"))
 MAX_CONCURRENT_LLM = int(os.getenv("STT_MAX_CONCURRENT_LLM", "2"))
+
+openai_stt_client = None
+
+class SimpleSegment:
+    def __init__(self, text: str):
+        self.text = text
 
 
 
@@ -248,10 +255,13 @@ def hf_cache_dir() -> str:
     cache_path.mkdir(parents=True, exist_ok=True)
     return str(cache_path)
 
-def load_whisper_model() -> WhisperModel:
+def load_whisper_model() -> Any:
+    if STT_BACKEND != "faster-whisper":
+        return None
     cache_root = hf_cache_dir()
     try:
         print(f"[model] Loading {MODEL_NAME} in {cache_root} (device={DEVICE}, compute={COMPUTE_TYPE})")
+        from faster_whisper import WhisperModel
         return WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE_TYPE, download_root=cache_root)
     except Exception:
         model_folder_name = f"models--Systran--faster-whisper-{MODEL_NAME}"
@@ -259,6 +269,7 @@ def load_whisper_model() -> WhisperModel:
         if os.path.isdir(corrupted_path):
             print(f"[model] Corrupted cache detected, purging: {corrupted_path}")
             shutil.rmtree(corrupted_path, ignore_errors=True)
+        from faster_whisper import WhisperModel
         return WhisperModel(MODEL_NAME, compute_type=COMPUTE_TYPE, download_root=cache_root)
 
 # ========================
@@ -582,6 +593,27 @@ async def handler(ws: websockets.WebSocketServerProtocol):
 # ========================
 # Global Transcriber Loop
 # ========================
+def transcribe_with_openai(arr: np.ndarray) -> str:
+    if openai_stt_client is None:
+        return ""
+    try:
+        pcm16 = (arr * 32768.0).astype(np.int16).tobytes()
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)
+            wf.setframerate(SAMPLE_RATE)
+            wf.writeframes(pcm16)
+        buf.seek(0)
+        resp = openai_stt_client.audio.transcriptions.create(
+            model=OPENAI_STT_MODEL,
+            file=("audio.wav", buf, "audio/wav")
+        )
+        return (resp.text or "").strip()
+    except Exception as e:
+        print(f"[stt] OpenAI transcription error: {e}")
+        return ""
+
 async def read_and_transcribe_loop():
     import math
     import difflib
@@ -647,6 +679,9 @@ async def read_and_transcribe_loop():
 
         def _transcribe():
             try:
+                if STT_BACKEND == "openai":
+                    text = transcribe_with_openai(arr)
+                    return [SimpleSegment(text)] if text else []
                 segments, _ = whisper.transcribe(
                     arr,
                     language=FORCE_LANG,
@@ -655,12 +690,9 @@ async def read_and_transcribe_loop():
                         "min_silence_duration_ms": VAD_MIN_SIL_MS,
                         "speech_pad_ms": VAD_PAD_MS,
                     },
-                    # IMPORTANT : éviter les réinjections de texte qui causent des redites
                     condition_on_previous_text=False,
-                    # Soyons moins stricts pour garder de petits bouts sans halluciner
                     no_speech_threshold=0.35,
                     log_prob_threshold=-1.0,
-                    # Beam modéré = plus cohérent que greedy, sans trop coûter
                     beam_size=3,
                 )
                 return list(segments)
@@ -776,7 +808,17 @@ def reset_state():
 async def main():
     if not check_license():
         return
-    global whisper, llm_analyzer
+    global whisper, llm_analyzer, openai_stt_client
+    if STT_BACKEND == "openai":
+        try:
+            from openai import OpenAI
+            if OPENAI_API_KEY.startswith("sk-"):
+                openai_stt_client = OpenAI(api_key=OPENAI_API_KEY)
+                print(f"[stt] OpenAI transcription ready (model={OPENAI_STT_MODEL})")
+            else:
+                print("[stt] OpenAI transcription disabled (missing API key)")
+        except Exception as e:
+            print(f"[stt] OpenAI init error: {e}")
 
     print("🚀 OPTIMIZED STT SERVER V4 (Best of Both Worlds)")
     print("=" * 50)
@@ -792,7 +834,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        whisper: WhisperModel; llm_analyzer: Optional[ImprovedLLMAnalyzer]
+        whisper: Any; llm_analyzer: Optional[ImprovedLLMAnalyzer]
         asyncio.run(main())
     except KeyboardInterrupt:
         server_shutdown.set(); print("\n[shutdown] Server stopped.")
