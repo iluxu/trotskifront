@@ -391,12 +391,12 @@
       <p style="margin-top:16px; font-size:0.9rem; color: var(--muted);">30-minute free trial at https://trotski.cc/app. Cancel anytime.</p>
     </div>
     <div class="hero-card">
-      <h3>Live session telemetry</h3>
+      <h3>Live system pulse</h3>
       <div class="stat-grid">
         <div class="stat"><span>Latency</span><strong>0.9s avg</strong></div>
         <div class="stat"><span>Questions detected</span><strong>18 / 15 min</strong></div>
-        <div class="stat"><span>Context mode</span><strong>Full transcript</strong></div>
-        <div class="stat"><span>Output style</span><strong>Compact</strong></div>
+        <div class="stat"><span>Context</span><strong>Full transcript</strong></div>
+        <div class="stat"><span>Mode</span><strong>Follow</strong></div>
       </div>
     </div>
   </section>
@@ -435,17 +435,11 @@
           <p style="color: var(--muted);">“How would you scale this to 1M users?”</p>
         </div>
         <div class="demo-card">
-          <h4>Draft answer (compact)</h4>
+          <h4>Draft answer</h4>
           <div class="demo-answer">
             <strong>Answer</strong>
             <span>Start with a stateless API tier behind a load balancer, add caching for hot reads, and push writes to async queues.</span>
             <span>Shard by tenant, isolate model workers, and use autoscaling with warm pools to avoid cold starts.</span>
-          </div>
-          <div class="mini-grid">
-            <div class="mini-card">Latency<strong>0.9s</strong></div>
-            <div class="mini-card">Context<strong>Full</strong></div>
-            <div class="mini-card">Mode<strong>Follow</strong></div>
-            <div class="mini-card">Output<strong>Compact</strong></div>
           </div>
         </div>
       </div>
